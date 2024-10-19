@@ -1,0 +1,142 @@
+Conceitos 
+
+Injeção de Dependência:
+Em vez de uma classe criar diretamente suas dependências (por exemplo, usando new), essas dependências são fornecidas de fora, seja no momento da construção da classe, via propriedades ou métodos. 
+Assim, a responsabilidade de instanciar objetos é passada para um provedor externo, como o container de injeção.
+
+Redução de acoplamento: As classes dependem de interfaces ou abstrações em vez de implementações concretas. Facilidade de testes: Dependências podem ser facilmente substituídas por versões mock ou fake
+durante testes. Manutenção e escalabilidade: O código fica mais modular e fácil de manter à medida que cresce.
+
+Padrão Repository:
+O padrão Repository é um padrão de design que tem como objetivo abstrair o acesso a dados em uma aplicação, fornecendo uma camada intermediária entre a lógica de negócios e a camada de persistência.
+Ele encapsula as operações de leitura e escrita de dados, permitindo que o restante da aplicação interaja com os dados de forma desacoplada e consistente, sem precisar lidar diretamente com os detalhes de
+como os dados são armazenados ou recuperados (seja em um banco de dados, uma API externa, etc.).
+
+Exemplo:
+1.Definição de uma Interface de Repositório Genérica (IRespository)
+
+public interface IBaseRepository<T> where T : class
+{
+    T GetById(int id);
+    IEnumerable<T> GetAll();
+    void Add(T entity);
+    void Update(T entity);
+    void Delete(T entity);
+}
+
+2.Implementação do Repositório Genérico: (BaseRepository)
+
+public class BaseRepository<T> : IBaseRepository<T> where T : class
+{
+    private readonly MeuDbContext _context;
+    private readonly DbSet<T> _dbSet;
+
+    public Repository(MeuDbContext context)
+    {
+        _context = context;
+        _dbSet = _context.Set<T>();
+    }
+
+    public void Update(T entity)
+    {
+        _dbSet.Update(entity);
+        _context.SaveChanges();
+    }
+}
+
+3.Definição de um Repositório Específico para uma Entidade:
+
+public interface IClienteRepository : IRepository<Cliente>
+{
+    Cliente GetByCpf(string cpf);
+}
+
+public class ClienteRepository : Repository<Cliente>, IClienteRepository
+{
+    public ClienteRepository(MeuDbContext context) : base(context)
+    {
+    }
+
+4.Uso do Padrão Repository no Serviço
+
+public class ClienteService
+{
+    private readonly IClienteRepository _clienteRepository;
+
+    public ClienteService(IClienteRepository clienteRepository)
+    {
+        _clienteRepository = clienteRepository;
+    }
+
+    public void CriarCliente(Cliente cliente)
+    {
+        _clienteRepository.Add(cliente);
+    }
+
+Padrão MVC:
+
+O padrão MVC (Model-View-Controller) é uma arquitetura de software que separa a aplicação em três componentes principais: Model (modelo), View (visão) e Controller (controlador). Esse padrão visa organizar o
+código de forma a tornar a aplicação mais modular, facilitando a manutenção, escalabilidade e testabilidade.
+
+Model (Modelo): O Model representa a camada de dados e lógica de negócios da aplicação. Ele lida com o gerenciamento de dados, seja por meio de bancos de dados, APIs, ou outras fontes de dados. 
+É responsável por armazenar o estado da aplicação e aplicar as regras de negócios.
+
+Exemplo de tarefas do Model: Consultar e atualizar dados no banco de dados. Aplicar regras de validação e negócio. Interagir com serviços de persistência.
+
+View (Visão): A View é responsável pela interface do usuário. Ela exibe os dados que o Model fornece e captura as interações do usuário. Em uma aplicação web, por exemplo, a View seria o HTML, CSS,
+e scripts JavaScript usados para exibir as páginas ao usuário.
+
+Controller (Controlador): O Controller atua como intermediário entre a View e o Model. Ele recebe as requisições do usuário, processa essas requisições, interage com o Model para manipular os dados, e
+seleciona qual View será exibida ao usuário.
+
+// Controller
+public class ProdutoController : Controller
+{
+    private readonly IProdutoRepository _produtoRepository;
+
+    public ProdutoController(IProdutoRepository produtoRepository)
+    {
+        _produtoRepository = produtoRepository;
+    }
+
+    public IActionResult Detalhes(int id)
+    {
+        var produto = _produtoRepository.GetById(id);
+        if (produto == null)
+        {
+            return NotFound();
+        }
+        return View(produto); // Passa o Model para a View
+    }
+}
+
+// View (Detalhes.cshtml)
+@model Produto
+<h2>Detalhes do Produto</h2>
+<p>Nome: @Model.Nome</p>
+<p>Preço: @Model.Preco</p>
+
+// Model (Produto.cs)
+public class Produto
+{
+    public int Id { get; set; }
+    public string Nome { get; set; }
+    public decimal Preco { get; set; }
+}
+
+Padrão CQRS
+
+O CQRS é uma poderosa técnica de arquitetura que separa leitura e escrita em modelos diferentes, promovendo escalabilidade, flexibilidade e otimização de performance. No entanto, sua complexidade
+adicional faz com que seja mais adequado para sistemas que realmente necessitem desse nível de separação e otimização.
+
+                	                -----------                	  ------------
+Comando ------> | Modelo    |  ---> Escrita  | Banco de |
+                	            | Comando |                          | Dados       |
+                	               -----------                 	  ------------
+                               
+              	               ---------                 	 ----------
+Consulta ------> | Modelo  |  ---> Leitura  | Banco de |
+                	           | Consulta|                           | Dados       |
+                	              ----------                	 ----------
+
+
